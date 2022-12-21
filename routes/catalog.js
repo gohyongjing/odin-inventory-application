@@ -58,7 +58,7 @@ router.post("/category/:id/update", category_controller.category_update_post);
 router.get("/category/:id", category_controller.category_detail);
 
 // GET request for list of all category..
-router.get("/categorys", category_controller.category_list);
+router.get("/categories", category_controller.category_list);
 
 module.exports = router;
 
