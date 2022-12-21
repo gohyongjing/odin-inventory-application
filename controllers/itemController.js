@@ -1,7 +1,25 @@
+const async = require("async");
 const Item = require("../models/item");
+const Category = require("../models/category");
 
 exports.index = (req, res) => {
-  res.send("NOT IMPLEMENTED: Site Home Page");
+  async.parallel(
+    {
+      item_count(callback) {
+        Item.countDocuments({}, callback); // Pass an empty object as match condition to find all documents of this collection
+      },
+      category_count(callback) {
+        Category.countDocuments({}, callback);
+      },
+    },
+    (err, results) => {
+      res.render("index", {
+        title: "Inventry Home",
+        error: err,
+        data: results,
+      });
+    }
+  );
 };
 
 // Display list of all items.
