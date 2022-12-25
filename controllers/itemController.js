@@ -182,12 +182,100 @@ exports.item_delete_post = (req, res, next) => {
 };
 
 // Display item update form on GET.
-exports.item_update_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: item update GET");
+exports.item_update_get = (req, res, next) => {
+  // Get item, categories for form.
+  async.parallel(
+    {
+      item(callback) {
+        Item.findById(req.params.id)
+          .populate("category")
+          .exec(callback);
+      },
+      categories(callback) {
+        Category.find(callback);
+      },
+    },
+    (err, results) => {
+      if (err) {
+        return next(err);
+      }
+      if (results.item == null) {
+        // No results.
+        const err = new Error("Item not found");
+        err.status = 404;
+        return next(err);
+      }
+      // Success.
+      res.render("item_form", {
+        title: "Update Item",
+        item: results.item,
+        categories: results.categories
+      });
+    }
+  );
 };
 
+
 // Handle item update on POST.
-exports.item_update_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: item update POST");
-};
+exports.item_update_post = [
+  // Validate and sanitize the name and description field.
+  body("name", "Item name must be between 1 and 10000 characters")
+    .trim()
+    .isLength({ min: 1, max: 10000 })
+    .escape(),
+  body("description", "Item description must be between 1 and 10000 characters")
+    .trim()
+    .isLength({ min: 1, max: 10000 })
+    .escape(),
+  body("category")
+    .escape(),
+  body("price", "Item price must be a non-negative number")
+    .isFloat({ min: 0 })
+    .toFloat(),
+  body("number_in_stock", "Item in stock must be a non-negative integer")
+    .isInt({ min: 0 })
+    .toInt(),
+  // Process request after validation and sanitization.
+  (req, res, next) => {
+    // Extract the validation errors from a request.
+    const errors = validationResult(req);
+
+    // Create a Item object with escaped/trimmed data and old id.
+    const item = new Item({
+      name: req.body.name,
+      description: req.body.description,
+      category: req.body.category,
+      price: req.body.price,
+      number_in_stock: req.body.number_in_stock,
+      _id: req.params.id, //This is required, or a new ID will be assigned!
+    });
+
+    if (!errors.isEmpty()) {
+      // There are errors. Render form again with sanitized values/error messages.
+
+      // Get all categories for form.
+      Category.find({}).exec((err, categories) => {
+        if (err) {
+          return next(err);
+        }
+        res.render("item_form", {
+          title: "Update Item",
+          item,
+          categories,
+          errors: errors.array(),
+        });
+      });
+    } else {
+      // Data from form is valid. Update the record.
+      Item.findByIdAndUpdate(req.params.id, item, {}, (err, theitem) => {
+        if (err) {
+          return next(err);
+        }
+
+        // Successful: redirect to item detail page.
+        res.redirect(theitem.url);
+      });
+    }
+  },
+];
 
