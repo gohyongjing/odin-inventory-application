@@ -150,13 +150,35 @@ exports.item_create_post = [
 
 
 // Display item delete form on GET.
-exports.item_delete_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: item delete GET");
+exports.item_delete_get = (req, res, next) => {
+  Item.findById(req.params.id)
+    .populate("category")
+    .exec((err, item) => {
+      if (err) {
+        return next(err);
+      }
+      if (item == null) {
+        // No results.
+        res.redirect("/catalog/items");
+      } else {
+        // Successful, so render.
+        res.render("item_delete", {
+          title: "Delete Item",
+          item: item,
+        });
+      }
+    })
 };
 
 // Handle item delete on POST.
-exports.item_delete_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: item delete POST");
+exports.item_delete_post = (req, res, next) => {
+  Item.findByIdAndRemove(req.body.id, (err) => {
+    if (err) {
+      return next(err);
+    }
+    // Success - go to author list
+    res.redirect("/catalog/items");
+  });
 };
 
 // Display item update form on GET.

@@ -110,13 +110,71 @@ exports.category_create_post = [
 ];
 
 // Display category delete form on GET.
-exports.category_delete_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: category delete GET");
+exports.category_delete_get = (req, res, next) => {
+  async.parallel(
+    {
+      category(callback) {
+        Category.findById(req.params.id).exec(callback);
+      },
+      category_items(callback) {
+        Item.find({ category: req.params.id }).exec(callback);
+      },
+    },
+    (err, results) => {
+      if (err) {
+        return next(err);
+      }
+      if (results.category == null) {
+        // No results.
+        res.redirect("/catalog/categories");
+      } else {
+        // Successful, so render.
+        res.render("category_delete", {
+          title: "Delete Category",
+          category: results.category,
+          category_items: results.category_items,
+        });
+      }
+    }
+  );
 };
 
 // Handle category delete on POST.
-exports.category_delete_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: category delete POST");
+exports.category_delete_post = (req, res, next) => {
+async.parallel(
+    {
+      category(callback) {
+        Category.findById(req.body.id).exec(callback);
+      },
+      category_items(callback) {
+        Item.find({ category: req.body.id }).exec(callback);
+      },
+
+    },
+    (err, results) => {
+      if (err) {
+        return next(err);
+      }
+      // Success
+      if (results.category_items.length > 0) {
+        // Category has items. Render in same way as for GET route.
+        res.render("category_delete", {
+          title: "Delete Category",
+          category: results.category,
+          category_items: results.category_items,
+        });
+        return;
+      }
+      // Category has no items. Delete object and redirect to the list of categories.
+      Category.findByIdAndRemove(req.body.id, (err) => {
+        if (err) {
+          return next(err);
+        }
+        // Success - go to author list
+        res.redirect("/catalog/categories");
+      });
+    }
+  );
 };
 
 // Display category update form on GET.

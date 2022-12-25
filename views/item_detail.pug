@@ -11,3 +11,7 @@ block content
   p #[strong Price:] #{item.price}
   p #[strong In Stock:] #{item.number_in_stock}
 
+  hr
+  p
+    a(href=item.url+'/delete') Delete item
+
